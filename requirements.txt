@@ -1,0 +1,6 @@
+python-telegram-bot
+google-generativeai
+yfinance
+supabase
+pandas
+pytz
