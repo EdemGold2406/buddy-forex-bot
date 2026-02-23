@@ -3,4 +3,4 @@ google-generativeai
 yfinance
 supabase
 pandas
-pytz
+flask
