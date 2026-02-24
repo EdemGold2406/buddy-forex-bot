@@ -4,8 +4,7 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-# --- FIXED IMPORT BELOW ---
-from brain import ask_buddy 
+from brain import ask_buddy
 from market import get_market_data, scan_all_pairs
 from database import log_trade_to_db
 
@@ -16,7 +15,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Buddy is Alive!")
+        self.wfile.write(b"Buddy is Alive on Groq (Llama 3.3)!")
 
 def run_fake_server():
     port = int(os.environ.get("PORT", 8080))
@@ -31,11 +30,11 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 **Buddy 2.0 Online**\n"
-        "Powered by Gemini 2.0 Flash (Newest Model)\n\n"
+        "👋 **Buddy Online**\n"
+        "Powered by Llama 3.3 (70B)\n\n"
         "Commands:\n"
-        "/scan - Check 'Big 5' Pairs\n"
-        "/check EURUSD - Deep Analysis\n"
+        "/scan - Scan the Big 5 Pairs\n"
+        "/check EURUSD - Analyze specific pair\n"
         "/log EURUSD LONG 1.05 1.04 1.08 - Journal Trade"
     )
 
