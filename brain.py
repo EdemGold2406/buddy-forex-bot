@@ -1,37 +1,52 @@
 import os
-from google import genai
+from groq import Groq
 
-# Get API Key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Get the key from Render
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Initialize Client
+# Initialize the Groq Client
 client = None
-if GEMINI_API_KEY:
+if GROQ_API_KEY:
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        client = Groq(api_key=GROQ_API_KEY)
     except Exception as e:
-        print(f"Error initializing Google AI: {e}")
+        print(f"Error initializing Groq: {e}")
 
-# --- MENTOR INSTRUCTIONS ---
+# --- THE MENTOR SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
 You are Buddy, an expert Forex Trading Mentor.
-Strategy: "Naked Forex" (Price Action) & "Trading in the Zone" (Psychology).
-Rules:
-- Account: $50. Risk: 5% ($2.50). R:R: 1:3.
-- Logic: Look for Pin Bars, Engulfing, Support/Resistance Bounces.
-- Output: "GO" or "NO TRADE". If GO, provide Entry, SL, TP.
+Your Strategy Source:
+1. "Naked Forex" by Alex Nekritin (Price Action, No Indicators).
+   - Look for: Kangaroo Tails (Pin Bars), Big Shadow (Engulfing), Last Kiss (Breakout & Retest).
+2. "Trading in the Zone" by Mark Douglas (Psychology & Probability).
+
+Your Rules:
+- Account: $50. 
+- Risk per trade: 5% ($2.50).
+- Risk-to-Reward: STRICTLY 1:3.
+- If the market is choppy/messy: Say "NO TRADE" firmly. Teach patience.
+- If a setup exists: Provide Entry, SL, and TP. Explain the pattern.
+
+Task:
+Analyze the provided market data.
+Tell the user if there is a high-probability setup or if they should wait.
 """
 
 def ask_buddy(market_data):
     if not client:
-        return "⚠️ Gemini Key missing."
+        return "⚠️ Groq API Key missing. Check Render settings."
 
     try:
-        # Using the specific model available to your key: gemini-2.0-flash
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=f"{SYSTEM_PROMPT}\n\nMARKET DATA:\n{market_data}"
+        # We use Llama 3.3 70B (The Smartest Model on your list)
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"MARKET DATA:\n{market_data}"}
+            ],
+            temperature=0.5, # Keep it logical
+            max_tokens=1000
         )
-        return response.text
+        return completion.choices[0].message.content
     except Exception as e:
         return f"Brain Error: {e}"
