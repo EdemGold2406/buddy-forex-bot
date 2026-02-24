@@ -7,6 +7,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from brain import ask_buddy
 from market import get_market_data, scan_all_pairs
 from database import log_trade_to_db
+from brain import ask_buddy, get_available_models
 
 # ==========================================
 # 1. THE FAKE WEB SERVER (To Fix Render Error)
@@ -69,6 +70,10 @@ async def check(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"📊 **Analysis for {pair}:**\n\n{analysis}", parse_mode='Markdown')
     else:
         await update.message.reply_text("❌ Could not get data.")
+async def debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🛠 Checking Google AI Models...")
+    models = get_available_models()
+    await update.message.reply_text(f"**Available Models:**\n{models}", parse_mode='Markdown')
 
 async def log(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -106,6 +111,7 @@ def main():
     app.add_handler(CommandHandler("check", check))
     app.add_handler(CommandHandler("scan", scan))
     app.add_handler(CommandHandler("log", log))
+    app.add_handler(CommandHandler("debug", debug))
     
     print("✅ Buddy is running...")
     app.run_polling()
