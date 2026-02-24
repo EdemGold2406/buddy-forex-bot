@@ -3,3 +3,5 @@ groq
 yfinance
 supabase
 pandas
+matplotlib
+mplfinance
