@@ -47,6 +47,18 @@ async def start_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.job_queue.run_repeating(hourly_prompt_job, interval=3600, first=5, chat_id=chat_id, name="hourly_prompt")
     await update.message.reply_text("🟢 **TA Beast Autopilot Active.**\nI will ping you every hour to review the 5 major charts one by one.")
 
+async def stop_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # This searches for the hourly loop and kills it
+    current_jobs = context.job_queue.get_jobs_by_name("hourly_prompt")
+    if not current_jobs:
+        await update.message.reply_text("⚠️ Autopilot is already off.")
+        return
+        
+    for job in current_jobs:
+        job.schedule_removal()
+        
+    await update.message.reply_text("🛑 **Autopilot Paused.**\nI will stop asking for charts. Get some rest, CEO. Type /start_auto tomorrow morning.")
+
 async def handle_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     
@@ -112,6 +124,9 @@ def main():
     app.add_handler(CommandHandler("start_auto", start_auto))
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_image))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat_handler))
+    app.add_handler(CommandHandler("start_auto", start_auto))
+    app.add_handler(CommandHandler("stop_auto", stop_auto)) # <--- ADD THIS LINE
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handle_image))
     
     print("✅ Buddy 7.0 (TA Beast) is running...")
     app.run_polling()
