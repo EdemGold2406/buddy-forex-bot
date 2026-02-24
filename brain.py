@@ -3,59 +3,44 @@ import google.generativeai as genai
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Default to None
-model = None
-
+# Configure the AI
 if GEMINI_API_KEY:
     try:
         genai.configure(api_key=GEMINI_API_KEY)
-        # We try the standard, fastest free model
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # We are using the specific model found in your list
+        model = genai.GenerativeModel('gemini-2.5-flash')
     except Exception as e:
+        model = None
         print(f"Error configuring Gemini: {e}")
+else:
+    model = None
 
 # --- THE MENTOR SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
-You are Buddy, a professional Forex Trading Mentor.
-Strategy: 'Naked Forex' (Price Action) & 'Trading in the Zone' (Psychology).
-Rules:
-- Account: $50. Risk: 5% ($2.50). R:R: 1:3.
-- Logic: Look for Pin Bars, Engulfing, Support/Resistance Bounces.
-- Output: "GO" or "NO TRADE". If GO, provide Entry, SL, TP.
+You are Buddy, an expert Forex Trading Mentor.
+Your Strategy Source:
+1. "Naked Forex" by Alex Nekritin (Price Action, No Indicators).
+2. "Trading in the Zone" by Mark Douglas (Psychology & Probability).
+
+Your Rules:
+- Account: $50. 
+- Risk per trade: 5% ($2.50).
+- Risk-to-Reward: STRICTLY 1:3.
+- If the market is choppy/messy: Say "NO TRADE" firmly. Teach patience.
+- If a setup exists: Provide Entry, SL, and TP. Explain the pattern (e.g., "Kangaroo Tail", "Big Shadow").
+
+Task:
+Analyze the provided market data.
+Tell the user if there is a high-probability setup or if they should wait.
 """
 
-def get_available_models():
-    """Helper to ask Google what models are allowed"""
-    try:
-        if not GEMINI_API_KEY: return "No API Key found."
-        
-        available = []
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                available.append(m.name)
-        return "\n".join(available)
-    except Exception as e:
-        return f"Could not list models: {e}"
-
 def ask_buddy(market_data):
-    # 1. Check if Key exists
-    if not GEMINI_API_KEY:
-        return "⚠️ Gemini Key is missing in Render Environment."
-
-    # 2. Check if Model loaded
     if not model:
-        return "⚠️ Gemini Model failed to load."
+        return "⚠️ Gemini Key missing or invalid."
 
     try:
-        # 3. Try to generate advice
+        # Standard generation call
         response = model.generate_content(f"{SYSTEM_PROMPT}\n\nMARKET DATA:\n{market_data}")
         return response.text
     except Exception as e:
-        # 4. IF IT FAILS: Tell the user why and list available models
-        error_msg = str(e)
-        if "404" in error_msg or "not found" in error_msg:
-            available_list = get_available_models()
-            return (f"⚠️ **Model Error:** The specific model 'gemini-1.5-flash' was not found.\n\n"
-                    f"**Here are the models YOUR key can actually use:**\n{available_list}\n\n"
-                    "Please tell the developer to update brain.py with one of these names.")
         return f"Brain Error: {e}"
