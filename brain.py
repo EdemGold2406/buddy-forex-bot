@@ -5,60 +5,55 @@ from groq import Groq
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 
-# --- THE MASTER TA PROMPT ---
 SYSTEM_PROMPT = """
-You are Buddy, an elite Technical Analysis King, Smart Money Concepts (SMC) Master, and Forex Mentor.
-Your Strategy is comprehensive and ruthless: 
-- Market Structure (Higher Highs/Lower Lows, Break of Structure, Change of Character).
-- Liquidity Sweeps, Imbalances (FVG), and Order Blocks.
-- Price Action (Engulfing patterns, Pin Bars, Rejection at key Support/Resistance).
-- Psychology: Think in probabilities, trade without emotion (Mark Douglas).
-
-Rules:
-- Account: $50. Risk per trade: 5% ($2.50). R:R must be at least 1:3.
-- When analyzing an image, scan for: Trend direction, Key Levels, Liquidity, and Candlestick momentum.
-- Provide a STRICT conclusion: "GO" or "NO TRADE". 
-- If GO, suggest a logical Entry, Stop Loss (safe behind structure), and Take Profit (1:3 distance).
-- If NO TRADE, clearly explain why (e.g., "Choppy market", "No clear liquidity sweep", "Mid-range").
+You are Buddy, an elite Technical Analysis King and SMC Master.
+Strategy: Market Structure, Liquidity Sweeps, Order Blocks, and FVG.
+Psychology: Probabilistic mindset (Mark Douglas).
+Rules: $50 Account. 5% Risk ($2.50). 1:3 R:R.
+Output: Analyze Structure, Liquidity, and Price Action. End with GO or NO TRADE.
 """
 
 def chat_with_buddy(user_message):
-    if not client: return "⚠️ Groq API Key missing."
+    if not client: return "⚠️ API Key missing."
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.6,
-            max_tokens=500
+            messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user_message}],
+            temperature=0.6, max_tokens=500
         )
         return completion.choices[0].message.content
     except Exception as e:
         return f"Brain Error: {e}"
 
 def analyze_chart_image(image_path, pair_name):
-    if not client: return "⚠️ Groq API Key missing."
-    try:
-        with open(image_path, "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+    if not client: return "⚠️ API Key missing."
+    
+    # We will try these models in order of stability
+    models_to_try = ["llama-3.2-90b-vision-preview", "llama-3.2-11b-vision-preview"]
+    
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+    last_error = ""
+    for model_name in models_to_try:
+        try:
+            completion = client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": f"{SYSTEM_PROMPT}\n\nTask: Analyze this H1 chart for {pair_name}."},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_string}"}}
+                        ]
+                    }
+                ],
+                temperature=0.2,
+                max_tokens=800
+            )
+            return completion.choices[0].message.content
+        except Exception as e:
+            last_error = str(e)
+            continue # Try the next model if this one fails
             
-        # Using Llama 3.2 Vision (Active and Stable)
-        completion = client.chat.completions.create(
-            model="llama-3.2-11b-vision-preview", 
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": f"{SYSTEM_PROMPT}\n\nTask: Analyze this H1 chart for {pair_name}. Tell me what you see (Structure, Liquidity, Price Action) and if there is a 1:3 trade setup."},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_string}"}}
-                    ]
-                }
-            ],
-            temperature=0.2, 
-            max_tokens=800
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return f"Vision Error: {e}"
+    return f"Vision Error (All models failed): {last_error}"
