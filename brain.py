@@ -4,12 +4,17 @@ import google.generativeai as genai
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        # We switch to 'gemini-pro' which is the most stable version globally
+        model = genai.GenerativeModel('gemini-pro')
+    except Exception as e:
+        model = None
+        print(f"Error configuring Gemini: {e}")
 else:
     model = None
 
-# THE "BOOK SMART" PROMPT
+# --- THE MENTOR PROMPT ---
 SYSTEM_PROMPT = """
 You are Buddy, a professional Forex Trading Mentor.
 Your Strategy is based on TWO books:
@@ -20,7 +25,7 @@ Your Rules:
 - Account: $50. Risk per trade: 5% ($2.50). 
 - Reward: STRICTLY 1:3. 
 - If the market is choppy or stuck in the middle of a range: Say "NO TRADE".
-- If a setup exists: Provide Entry, SL, and TP. Explain the setup using "Naked Forex" terms and give simple examples to cemenet your points..
+- If a setup exists: Provide Entry, SL, and TP. Explain the setup using "Naked Forex" terms.
 
 Task:
 Analyze the provided market data. Find the highest probability setup or tell the user to wait.
@@ -28,8 +33,9 @@ Analyze the provided market data. Find the highest probability setup or tell the
 
 def ask_buddy(market_data):
     if not model:
-        return "⚠️ Gemini Key missing."
+        return "⚠️ Gemini Key missing or invalid."
     try:
+        # standard generation call
         response = model.generate_content(f"{SYSTEM_PROMPT}\n\nMARKET DATA:\n{market_data}")
         return response.text
     except Exception as e:
