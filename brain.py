@@ -1,11 +1,10 @@
 import os
 from google import genai
-from google.genai import types
 
-# Get the API Key
+# Get API Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Initialize the Client (New Way)
+# Initialize Client
 client = None
 if GEMINI_API_KEY:
     try:
@@ -13,32 +12,22 @@ if GEMINI_API_KEY:
     except Exception as e:
         print(f"Error initializing Google AI: {e}")
 
-# --- THE MENTOR SYSTEM PROMPT ---
+# --- MENTOR INSTRUCTIONS ---
 SYSTEM_PROMPT = """
 You are Buddy, an expert Forex Trading Mentor.
-Your Strategy Source:
-1. "Naked Forex" by Alex Nekritin (Price Action, No Indicators).
-2. "Trading in the Zone" by Mark Douglas (Psychology & Probability).
-
-Your Rules:
-- Account: $50. 
-- Risk per trade: 5% ($2.50).
-- Risk-to-Reward: STRICTLY 1:3.
-- If the market is choppy/messy: Say "NO TRADE" firmly.
-- If a setup exists: Provide Entry, SL, and TP. Explain the pattern (e.g., "Kangaroo Tail", "Big Shadow").
-
-Task:
-Analyze the provided market data.
-Tell the user if there is a high-probability setup or if they should wait.
+Strategy: "Naked Forex" (Price Action) & "Trading in the Zone" (Psychology).
+Rules:
+- Account: $50. Risk: 5% ($2.50). R:R: 1:3.
+- Logic: Look for Pin Bars, Engulfing, Support/Resistance Bounces.
+- Output: "GO" or "NO TRADE". If GO, provide Entry, SL, TP.
 """
 
 def ask_buddy(market_data):
     if not client:
-        return "⚠️ Gemini Key missing or invalid."
+        return "⚠️ Gemini Key missing."
 
     try:
-        # We use the specific model found in your list: gemini-2.0-flash
-        # It is fast, smart, and definitely available.
+        # Using the specific model available to your key: gemini-2.0-flash
         response = client.models.generate_content(
             model='gemini-2.0-flash',
             contents=f"{SYSTEM_PROMPT}\n\nMARKET DATA:\n{market_data}"
