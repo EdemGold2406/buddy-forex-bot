@@ -44,9 +44,9 @@ def analyze_chart_image(image_path, pair_name):
         with open(image_path, "rb") as image_file:
             encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
             
-        # Using Groq's NEWEST Vision Model 
+        # Using Llama 3.2 Vision (Active and Stable)
         completion = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct", 
+            model="llama-3.2-11b-vision-preview", 
             messages=[
                 {
                     "role": "user",
@@ -56,7 +56,7 @@ def analyze_chart_image(image_path, pair_name):
                     ]
                 }
             ],
-            temperature=0.3, # Low temp = Highly analytical, no hallucinations
+            temperature=0.2, 
             max_tokens=800
         )
         return completion.choices[0].message.content
